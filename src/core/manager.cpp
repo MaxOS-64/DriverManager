@@ -50,6 +50,11 @@ void Manager::load_driver_list(string path) {
 
 	// Read the list of inital devices
 	auto jhandle = open_file(path.c_str());
+    if (jhandle == 0) {
+        klog("Failed to open driver list: %s\n", path.c_str());
+        return;
+    }
+
 	auto size = file_size(jhandle);
 	auto jsonstr = string((uint8_t*)allocate_memory(size), size);
 	file_read(jhandle, jsonstr.c_str(), size);
@@ -85,7 +90,7 @@ void Manager::parse_driver_list(JSONNode* list) {
 		id.model = {
 			.vendor		= (uint16_t)vendor.hex_to_uint64(),
 			.device		= (uint16_t)device.hex_to_uint64(),
-			.revision	= (uint16_t)revision.hex_to_uint64(),
+		    .revision   = revision.empty() ? (uint16_t)0xFFFF : (uint16_t)revision.hex_to_uint64(),
 		};
 
 		// Build the driver id
@@ -95,6 +100,7 @@ void Manager::parse_driver_list(JSONNode* list) {
 		};
 
 		// Cache
+	    klog("Loaded driver rule: %s (%x:%x rev %x)\n", name.c_str(), id.model.vendor, id.model.device, id.model.revision);
 		m_driver_list.insert(id, entry);
 	}
 }
@@ -107,9 +113,17 @@ void Manager::start_driver(Device* device) {
 	if (device->driver_started)
 		return;
 
-	// Get the driver details for this device
-	auto it = m_driver_list.find(device->id_info());
-	if (it == m_driver_list.end())
+    // Get the driver details for this device
+    auto id = device->id_info();
+    auto it = m_driver_list.find(id);
+
+    // Try wildcard revision if no exact match exists
+    if (it == m_driver_list.end()) {
+        id.model.revision = 0xFFFF;
+        it = m_driver_list.find(id);
+    }
+
+    if (it == m_driver_list.end())
 		return;
 
 	// Pass the ID
@@ -204,8 +218,28 @@ void Manager::register_device(Device *device) {
  */
 void Manager::start_drivers() {
 
+    try_load_full_driver_list();
+
 	for (const auto& device : m_devices)
 		if (!device->driver_started)
 			start_driver(device);
 
+}
+
+void Manager::try_load_full_driver_list() {
+
+    // Already setup
+    if (m_full_list_loaded)
+        return;
+
+    // Dont deadlock on fs
+    if (++m_full_list_attempts % 100 != 0)
+        return;
+
+    // Disk containing drivers not ready yet
+    if (!fs_full_ready())
+        return;
+
+    load_driver_list("/0/os/config/drivers.json");
+    m_full_list_loaded = true;
 }

@@ -292,7 +292,7 @@ device_identification_t PCIController::pci_desc_to_dev_info(const pci_device_des
 		.model = {
 			.vendor = dev.vendor_id,
 			.device = dev.device_id,
-			.revision = dev.sub_vendor_id,
+			.revision = dev.revision,
 		},
 
 		.class_info = {

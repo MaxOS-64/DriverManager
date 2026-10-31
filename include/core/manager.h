@@ -13,8 +13,10 @@
 #include <cstddef>
 
 #include <libfs/path.h>
+#include <libfs/init.h>
 #include <libcommon/json.h>
 #include <core/device.h>
+
 
 namespace DriverManager::core {
 
@@ -36,14 +38,17 @@ namespace DriverManager::core {
 
 			MaxOS::common::Vector<DeviceEnumerator*> m_device_enumerators;
 
+	        bool m_full_list_loaded = false;
+	        size_t m_full_list_attempts = 0;
+
 			MaxOS::common::Map<device_identification_t, driver_entry_t> m_driver_list;
 			void start_driver(Device* device);
 
 			void load_driver_list(MaxOS::string path);
-			void parse_driver_list(MaxOS::common::JSONNode*);
+            void try_load_full_driver_list();
+            void parse_driver_list(MaxOS::common::JSONNode*);
 
-
-		public:
+        public:
 			Manager();
 			~Manager() final;
 
