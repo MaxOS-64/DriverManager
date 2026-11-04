@@ -71,19 +71,19 @@ void Manager::load_driver_list(string path) {
 void Manager::parse_driver_list(JSONNode* list) {
 
 	// Cache each driver
-	auto drivers = (*list)["drivers"s];
+	auto drivers = (*list)["drivers"_s];
 	for (int i = 0; i < drivers.array_size(); ++i) {
 
 		auto& driver = drivers[i];
-		auto& device_node = driver["device"s];
-		auto& model = device_node["model"s];
+		auto& device_node = driver["device"_s];
+		auto& model = device_node["model"_s];
 
 		// Parse
-		string name = driver["name"s];
-		string path = driver["file"s];
-		string vendor = model["vendor"s];
-		string device = model["device"s];
-		string revision = model["revision"s];
+		string name = driver["name"_s];
+		string path = driver["file"_s];
+		string vendor = model["vendor"_s];
+		string device = model["device"_s];
+		string revision = model["revision"_s];
 
 		// Build the device id
 		device_identification_t id {};
